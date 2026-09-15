@@ -61,6 +61,7 @@
   .checkbox.checked { color:#FF6A13; }
   .num { width:26px; height:26px; border-radius:50%; background:#FF6A13; color:#fff; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
   .num.done { background:#1F8A5F; }
+  .num.above { width:auto; height:auto; border-radius:5px; padding:1px 7px; display:inline-flex; margin:0 0 4px; font-size:12px; }
   .text-wrap { flex:1; min-width:0; }
   .text { font-size:13.5px; line-height:1.4; white-space:pre-line; }
   .text.delivered { text-decoration:line-through; color:#6B7280; }
@@ -192,9 +193,8 @@
           html += '<div class="grip" data-drag-handle data-id="' + it.id + '">' + svg.grip + '</div>';
         }
 
-        html += '<div class="num' + (it.delivered ? ' done' : '') + ' bc">' + (idx + 1) + '</div>';
-
         html += '<div class="text-wrap" data-action="' + (state.selectMode ? 'toggle-select' : 'start-edit') + '" data-id="' + it.id + '">';
+        html += '<div class="num above bc' + (it.delivered ? ' done' : '') + '">' + (idx + 1) + '</div>';
         if (state.editingId === it.id) {
           html += '<textarea class="edit-box" data-edit-box rows="' + Math.min(8, (state.editText.split("\n").length || 1)) + '">' + escapeHtml(state.editText) + '</textarea>';
         } else {
