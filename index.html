@@ -65,6 +65,7 @@
   .text-wrap { flex:1; min-width:0; }
   .text { font-size:13.5px; line-height:1.4; white-space:pre-line; }
   .text.delivered { text-decoration:line-through; color:#6B7280; }
+  .phone-link { color:#FF6A13; text-decoration:underline; text-underline-offset:2px; }
   .edit-box { width:100%; font-size:13.5px; line-height:1.4; padding:6px 8px; border:1px solid #FF6A13; border-radius:6px; outline:none; resize:vertical; }
   .row-btn { width:30px; height:30px; border-radius:50%; border:1.5px solid #C7C9CC; background:transparent; color:#C7C9CC; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
   .row-btn.done { border-color:#1F8A5F; background:#1F8A5F; color:#fff; }
@@ -136,6 +137,27 @@
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
+  // Finds phone-number-like sequences in already-escaped text and wraps
+  // them in a tappable WhatsApp link. Runs after escapeHtml, so it only
+  // ever sees digits/spaces/+/-/()/plain text — safe to inject <a> tags.
+  var PHONE_RE = /(\+?\d[\d\s\-()]{7,}\d)/g;
+
+  function normalizeToWaNumber(raw) {
+    var digits = raw.replace(/\D/g, "");
+    if (digits.length === 11 && digits[0] === "8") {
+      digits = "7" + digits.slice(1); // KZ/RU local trunk prefix -> country code
+    }
+    return digits;
+  }
+
+  function linkifyPhones(escapedText) {
+    return escapedText.replace(PHONE_RE, function (match) {
+      var digits = normalizeToWaNumber(match);
+      if (digits.length < 9) return match; // too short to be a real phone number
+      return '<a href="https://wa.me/' + digits + '" target="_blank" rel="noopener noreferrer" data-phone-link class="phone-link">' + match + '</a>';
+    });
+  }
+
   var app = document.getElementById("app");
 
   function render() {
@@ -198,7 +220,7 @@
         if (state.editingId === it.id) {
           html += '<textarea class="edit-box" data-edit-box rows="' + Math.min(8, (state.editText.split("\n").length || 1)) + '">' + escapeHtml(state.editText) + '</textarea>';
         } else {
-          html += '<div class="text' + (it.delivered ? ' delivered' : '') + '">' + escapeHtml(it.text) + '</div>';
+          html += '<div class="text' + (it.delivered ? ' delivered' : '') + '">' + linkifyPhones(escapeHtml(it.text)) + '</div>';
         }
         html += '</div>';
 
@@ -393,6 +415,7 @@
 
   // ---- click delegation ----
   app.addEventListener("click", function (e) {
+    if (e.target.closest("[data-phone-link]")) return;
     var t = e.target.closest("[data-action]");
     if (!t) return;
     var action = t.getAttribute("data-action");
