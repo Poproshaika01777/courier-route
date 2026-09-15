@@ -85,6 +85,8 @@
   .sel-actions button:disabled { background:#3A3D42; }
 
   .sort-row { padding:10px 18px 4px; }
+  .start-input { width:100%; padding:9px 11px; border-radius:9px; border:1px solid #E1E3DE; background:#fff; font-size:13px; margin-bottom:6px; outline:none; }
+  .start-input:focus { border-color:#FF6A13; }
   .sort-btn { width:100%; padding:10px; border-radius:9px; border:1.5px dashed #FF6A13; background:#fff; color:#15171A; font-size:13px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:6px; }
   .sort-btn:disabled { opacity:.7; }
   .spinner { width:13px; height:13px; border:2px solid #15171A30; border-top-color:#15171A; border-radius:50%; animation: spin .8s linear infinite; }
@@ -126,7 +128,8 @@
     copyFeedback: false,
     sorting: false,
     sortStatus: "",
-    sortError: null
+    sortError: null,
+    startFrom: ""
   };
 
   function loadItems() {
@@ -199,9 +202,12 @@
     }
 
     if (!state.selectMode && state.items.length > 1) {
-      html += '<div class="sort-row"><button class="sort-btn" data-action="sort-by-location"' + (state.sorting ? " disabled" : "") + '>';
+      html += '<div class="sort-row">';
+      html += '  <input id="start-from-input" class="start-input" placeholder="Start from (blank = your current location)" value="' + escapeHtml(state.startFrom) + '"' + (state.sorting ? " disabled" : "") + ' />';
+      html += '  <button class="sort-btn" data-action="sort-by-location"' + (state.sorting ? " disabled" : "") + '>';
       html += state.sorting ? '<span class="spinner"></span> ' + escapeHtml(state.sortStatus) : svg.pin + ' Sort by nearest stop';
-      html += '</button></div>';
+      html += '  </button>';
+      html += '</div>';
     }
 
     if (state.confirmClear) {
@@ -287,6 +293,12 @@
       draftInput.addEventListener("input", function () {
         state.draft = draftInput.value;
         draftInput.rows = Math.min(6, Math.max(1, state.draft.split("\n").length));
+      });
+    }
+    var startFromInput = document.getElementById("start-from-input");
+    if (startFromInput) {
+      startFromInput.addEventListener("input", function () {
+        state.startFrom = startFromInput.value;
       });
     }
   }
@@ -487,14 +499,32 @@
     return tryCandidate(0);
   }
 
+  function getOrigin() {
+    var startText = (state.startFrom || "").trim();
+    if (!startText) {
+      state.sortStatus = "Getting your location…";
+      render();
+      return getCurrentPosition();
+    }
+    state.sortStatus = "Locating start point…";
+    render();
+    return geocodeAddress(startText, "").then(function (coords) {
+      if (!coords) {
+        var err = new Error("start-not-found");
+        err.code = "start-not-found";
+        throw err;
+      }
+      return coords;
+    });
+  }
+
   function sortByLocation() {
     if (state.items.length < 2 || state.sorting) return;
     state.sorting = true;
     state.sortError = null;
-    state.sortStatus = "Getting your location…";
     render();
 
-    getCurrentPosition().then(function (origin) {
+    getOrigin().then(function (origin) {
       state.sortStatus = "Checking your area…";
       render();
 
@@ -544,10 +574,14 @@
           render();
         });
       });
-    }).catch(function () {
+    }).catch(function (err) {
       state.sorting = false;
       state.sortStatus = "";
-      state.sortError = "Couldn't get your location or reach the map service. Check that location access is allowed and you're online, then try again.";
+      if (err && err.code === "start-not-found") {
+        state.sortError = "Couldn't find that starting address. Try just the street name and house number, or clear the field to use your current location instead.";
+      } else {
+        state.sortError = "Couldn't get your location or reach the map service. Check that location access is allowed and you're online, then try again.";
+      }
       render();
     });
   }
