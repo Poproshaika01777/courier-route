@@ -293,7 +293,7 @@
 
   function buildNumberedText() {
     return state.items
-      .map(function (it, idx) { return (idx + 1) + ". " + it.text; })
+      .map(function (it, idx) { return (idx + 1) + ".\n" + it.text; })
       .join("\n\n");
   }
 
