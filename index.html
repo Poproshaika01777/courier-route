@@ -424,25 +424,67 @@
       .then(function (data) {
         var addr = data && data.address;
         if (!addr) return "";
-        return addr.city || addr.town || addr.village || addr.state || "";
+        var city = addr.city || addr.town || addr.village || addr.state || "";
+        var country = addr.country || "";
+        return [city, country].filter(Boolean).join(", ");
       })
       .catch(function () { return ""; });
   }
 
-  function geocodeAddress(fullText, cityHint) {
+  // Pulls out "street name + house number" fragments from a messy first
+  // line like "ЖК La Verde, Жамакаева 252, блок7, кв 88" so the geocoder
+  // gets something closer to a real postal address instead of the whole
+  // noisy line. Tolerates a comma between name and number, and a "дом"
+  // marker, and skips false hits like "подъезд 1" or "этаж 6".
+  var BLOCKLIST_WORDS = ["подъезд", "этаж", "кв", "квартира", "блок", "корпус", "код", "домофон", "калитка", "калитки", "этаже", "офис"];
+  var STREET_NUM_RE = /([А-ЯЁ][А-Яа-яЁё\-]*(?:\s+[А-ЯЁ][А-Яа-яЁё\-]*)*)\s*,?\s*(?:дом\s+|д\.\s*)?(\d+[a-zA-Zа-яА-Я]?(?:\/\d+)?)/g;
+
+  function extractQueryCandidates(fullText) {
     var firstLine = fullText.split("\n")[0].trim();
-    if (!firstLine) return Promise.resolve(null);
-    var query = cityHint ? firstLine + ", " + cityHint : firstLine;
-    var url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(query);
-    return fetch(url, { headers: { "Accept-Language": "ru" } })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        if (data && data[0]) {
-          return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-        }
-        return null;
-      })
-      .catch(function () { return null; });
+    var candidates = [];
+    var m;
+    STREET_NUM_RE.lastIndex = 0;
+    while ((m = STREET_NUM_RE.exec(firstLine)) !== null) {
+      var words = m[1].trim().split(/\s+/);
+      var lastWord = words[words.length - 1].toLowerCase();
+      if (BLOCKLIST_WORDS.indexOf(lastWord) !== -1) continue;
+      var candidate = (m[1] + " " + m[2]).trim();
+      if (candidate !== firstLine) candidates.push(candidate);
+    }
+    candidates.push(firstLine);
+    return candidates;
+  }
+
+  function geocodeAddress(fullText, cityHint) {
+    var candidates = extractQueryCandidates(fullText);
+
+    function tryCandidate(i) {
+      if (i >= candidates.length) return Promise.resolve(null);
+      var query = cityHint ? candidates[i] + ", " + cityHint : candidates[i];
+      var url = "https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=3&q=" + encodeURIComponent(query);
+      return fetch(url, { headers: { "Accept-Language": "ru" } })
+        .then(function (res) { return res.json(); })
+        .then(function (results) {
+          if (results && results.length) {
+            // Prefer a result that actually matched a house number over
+            // a loose match on just the street/area name.
+            var best = results.find(function (r) { return r.address && r.address.house_number; }) || results[0];
+            return { lat: parseFloat(best.lat), lon: parseFloat(best.lon) };
+          }
+          if (i + 1 < candidates.length) {
+            return sleep(1100).then(function () { return tryCandidate(i + 1); });
+          }
+          return null;
+        })
+        .catch(function () {
+          if (i + 1 < candidates.length) {
+            return sleep(1100).then(function () { return tryCandidate(i + 1); });
+          }
+          return null;
+        });
+    }
+
+    return tryCandidate(0);
   }
 
   function sortByLocation() {
