@@ -59,9 +59,13 @@
   .grip { touch-action:none; cursor:grab; }
   .checkbox { color:#C7C9CC; }
   .checkbox.checked { color:#FF6A13; }
+  .move-col { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+  .move-btn { color:#B4B7BB; padding:3px; background:none; border:none; display:flex; }
+  .move-btn:disabled { opacity:.25; }
+  .pos-input { width:30px; text-align:center; font-size:13px; font-weight:700; padding:2px 0; border:1.5px solid #FF6A13; border-radius:5px; outline:none; margin-bottom:4px; color:#FF6A13; }
   .num { width:26px; height:26px; border-radius:50%; background:#FF6A13; color:#fff; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
   .num.done { background:#1F8A5F; }
-  .num.above { width:auto; height:auto; border-radius:5px; padding:1px 7px; display:inline-flex; margin:0 0 4px; font-size:12px; }
+  .num.above { width:auto; height:auto; border-radius:5px; padding:1px 7px; display:inline-flex; margin:0 0 4px; font-size:12px; cursor:pointer; }
   .text-wrap { flex:1; min-width:0; }
   .text { font-size:13.5px; line-height:1.4; white-space:pre-line; }
   .text.delivered { text-decoration:line-through; color:#6B7280; }
@@ -114,7 +118,9 @@
     checkSquare: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
     square: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>',
     copy: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
-    pin: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>'
+    pin: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+    chevUp: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>',
+    chevDown: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
   };
 
   var state = {
@@ -123,6 +129,7 @@
     confirmClear: false,
     editingId: null,
     editText: "",
+    editingPositionId: null,
     selectMode: false,
     selectedIds: {},
     copyFeedback: false,
@@ -240,11 +247,19 @@
         if (state.selectMode) {
           html += '<div class="checkbox' + (isSelected ? ' checked' : '') + '" data-action="toggle-select" data-id="' + it.id + '">' + (isSelected ? svg.checkSquare : svg.square) + '</div>';
         } else {
-          html += '<div class="grip" data-drag-handle data-id="' + it.id + '">' + svg.grip + '</div>';
+          html += '<div class="move-col">';
+          html += '  <button class="move-btn" data-action="move-up" data-id="' + it.id + '"' + (idx === 0 ? " disabled" : "") + '>' + svg.chevUp + '</button>';
+          html += '  <div class="grip" data-drag-handle data-id="' + it.id + '">' + svg.grip + '</div>';
+          html += '  <button class="move-btn" data-action="move-down" data-id="' + it.id + '"' + (idx === state.items.length - 1 ? " disabled" : "") + '>' + svg.chevDown + '</button>';
+          html += '</div>';
         }
 
         html += '<div class="text-wrap" data-action="' + (state.selectMode ? 'toggle-select' : 'start-edit') + '" data-id="' + it.id + '">';
-        html += '<div class="num above bc' + (it.delivered ? ' done' : '') + '">' + (idx + 1) + '</div>';
+        if (state.editingPositionId === it.id) {
+          html += '<input class="pos-input bc" data-position-input data-id="' + it.id + '" type="tel" inputmode="numeric" value="' + (idx + 1) + '" />';
+        } else {
+          html += '<div class="num above bc' + (it.delivered ? ' done' : '') + '"' + (state.selectMode ? "" : ' data-action="start-position-edit" data-id="' + it.id + '"') + '>' + (idx + 1) + '</div>';
+        }
         if (state.editingId === it.id) {
           html += '<textarea class="edit-box" data-edit-box rows="' + Math.min(8, (state.editText.split("\n").length || 1)) + '">' + escapeHtml(state.editText) + '</textarea>';
         } else {
@@ -301,6 +316,16 @@
         state.startFrom = startFromInput.value;
       });
     }
+    var posInput = app.querySelector("[data-position-input]");
+    if (posInput) {
+      posInput.focus();
+      posInput.select();
+      var posId = posInput.getAttribute("data-id");
+      posInput.addEventListener("blur", function () { commitPositionEdit(posId, posInput.value); });
+      posInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") posInput.blur();
+      });
+    }
   }
 
   // ---- actions ----
@@ -343,6 +368,40 @@
       return it.id === state.editingId ? Object.assign({}, it, { text: state.editText.trim() || it.text }) : it;
     });
     state.editingId = null;
+    saveItems();
+    render();
+  }
+
+  function moveItem(id, delta) {
+    var index = state.items.findIndex(function (it) { return it.id === id; });
+    if (index === -1) return;
+    var newIndex = Math.max(0, Math.min(state.items.length - 1, index + delta));
+    if (newIndex === index) return;
+    var arr = state.items.slice();
+    var moved = arr.splice(index, 1)[0];
+    arr.splice(newIndex, 0, moved);
+    state.items = arr;
+    saveItems();
+    render();
+  }
+
+  function startPositionEdit(id) {
+    state.editingPositionId = id;
+    render();
+  }
+
+  function commitPositionEdit(id, rawValue) {
+    state.editingPositionId = null;
+    var index = state.items.findIndex(function (it) { return it.id === id; });
+    if (index === -1) { render(); return; }
+    var target = parseInt(rawValue, 10);
+    if (!target || isNaN(target)) { render(); return; }
+    var newIndex = Math.max(0, Math.min(state.items.length - 1, target - 1));
+    if (newIndex === index) { render(); return; }
+    var arr = state.items.slice();
+    var moved = arr.splice(index, 1)[0];
+    arr.splice(newIndex, 0, moved);
+    state.items = arr;
     saveItems();
     render();
   }
@@ -647,6 +706,9 @@
       case "toggle-select": toggleSelected(id); break;
       case "toggle-delivered": toggleDelivered(id); break;
       case "delete-item": deleteItem(id); break;
+      case "move-up": moveItem(id, -1); break;
+      case "move-down": moveItem(id, 1); break;
+      case "start-position-edit": startPositionEdit(id); break;
       case "start-edit": startEdit(id); break;
       case "mark-selected-delivered": markSelectedDelivered(); break;
       case "delete-selected": deleteSelected(); break;
