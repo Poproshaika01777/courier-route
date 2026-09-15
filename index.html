@@ -8,302 +8,414 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#15171A" />
 <title>Today's Route</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
+  @font-face { font-family: 'Barlow Condensed Fallback'; src: local('Arial Narrow'), local('Arial'); }
   html, body { margin:0; padding:0; background:#F4F5F2; overscroll-behavior:none; }
   * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, Arial, sans-serif; color:#15171A; }
   input, textarea, button { font-family: inherit; }
-  .bc { font-family: 'Barlow Condensed', system-ui, sans-serif; }
+  .bc { font-family: 'Arial Narrow', Arial, sans-serif; font-stretch: condensed; }
+  button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  textarea { -webkit-appearance: none; }
+  #app { max-width: 440px; margin: 0 auto; min-height: 100vh; display:flex; flex-direction:column; }
+
+  .header { background:#15171A; color:#fff; padding:20px 18px 16px; }
+  .header-top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .date { font-size:13px; letter-spacing:.3px; color:#9CA0A6; }
+  .title { font-size:30px; font-weight:700; line-height:1.05; margin-top:2px; }
+  .header-btns { display:flex; gap:8px; }
+  .btn-select { border-radius:8px; padding:8px 10px; font-size:13px; border:1px solid #3A3D42; background:transparent; color:#C7C9CC; }
+  .btn-select.active { background:#FF6A13; border-color:#FF6A13; color:#fff; }
+  .btn-reset { border-radius:8px; padding:8px; border:1px solid #3A3D42; background:transparent; color:#C7C9CC; display:flex; }
+  .progress-row { display:flex; justify-content:space-between; font-size:13px; color:#C7C9CC; margin:14px 0 6px; }
+  .progress-track { height:6px; background:#2A2C30; border-radius:3px; overflow:hidden; }
+  .progress-fill { height:100%; background:#FF6A13; border-radius:3px; transition:width 200ms ease; }
+
+  .clear-banner { background:#FFF3EC; border-bottom:1px solid #E1E3DE; padding:12px 18px; }
+  .clear-banner-title { font-size:14px; margin-bottom:8px; }
+  .clear-banner-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .clear-banner-actions button { font-size:13px; padding:6px 10px; border-radius:6px; border:1px solid #E1E3DE; background:#fff; }
+  .btn-danger { border:none !important; background:#D64545 !important; color:#fff; }
+  .btn-ghost { border:1px solid #E1E3DE; background:transparent !important; margin-left:auto; }
+
+  .select-toolbar { display:flex; align-items:center; justify-content:space-between; padding:10px 18px; background:#fff; border-bottom:1px solid #E1E3DE; }
+  .select-toolbar button { font-size:13px; color:#FF6A13; background:none; border:none; padding:0; }
+  .select-count { font-size:13px; color:#6B7280; }
+
+  .list { flex:1; }
+  .empty { text-align:center; color:#6B7280; padding:60px 24px; }
+  .empty svg { margin:0 auto 10px; opacity:.5; }
+  .empty .h { font-size:15px; margin-bottom:4px; }
+  .empty .s { font-size:13px; }
+
+  .row { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-bottom:1px solid #E1E3DE; position:relative; }
+  .row.selected { background:#FFF3EC; }
+  .row.dragging { background:#fff; box-shadow:0 8px 20px rgba(0,0,0,.15); z-index:10; }
+  .row.delivered { opacity:.55; }
+  .grip, .checkbox { padding:6px; margin-top:2px; flex-shrink:0; display:flex; color:#B4B7BB; }
+  .grip { touch-action:none; cursor:grab; }
+  .checkbox { color:#C7C9CC; }
+  .checkbox.checked { color:#FF6A13; }
+  .num { width:26px; height:26px; border-radius:50%; background:#FF6A13; color:#fff; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
+  .num.done { background:#1F8A5F; }
+  .text-wrap { flex:1; min-width:0; }
+  .text { font-size:13.5px; line-height:1.4; white-space:pre-line; }
+  .text.delivered { text-decoration:line-through; color:#6B7280; }
+  .edit-box { width:100%; font-size:13.5px; line-height:1.4; padding:6px 8px; border:1px solid #FF6A13; border-radius:6px; outline:none; resize:vertical; }
+  .row-btn { width:30px; height:30px; border-radius:50%; border:1.5px solid #C7C9CC; background:transparent; color:#C7C9CC; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
+  .row-btn.done { border-color:#1F8A5F; background:#1F8A5F; color:#fff; }
+  .del-btn { color:#C7C9CC; padding:6px; display:flex; flex-shrink:0; margin-top:2px; background:none; border:none; }
+
+  .bottom-fixed { position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:center; }
+  .add-wrap { background:linear-gradient(0deg, #F4F5F2 60%, rgba(244,245,242,0)); padding-top:20px; width:100%; display:flex; justify-content:center; }
+  .add-inner { width:100%; max-width:440px; padding:0 14px 14px; }
+  .add-bar { background:#fff; border:1px solid #E1E3DE; border-radius:12px; padding:8px 8px 8px 12px; display:flex; align-items:flex-end; gap:8px; box-shadow:0 4px 14px rgba(0,0,0,.08); }
+  .add-bar textarea { flex:1; border:none; outline:none; resize:none; font-size:14px; padding:6px 0; max-height:160px; overflow-y:auto; }
+  .add-btn { width:36px; height:36px; border-radius:9px; background:#FF6A13; color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:none; }
+
+  .sel-actions { width:100%; max-width:440px; background:#15171A; padding:12px 14px; display:flex; gap:8px; }
+  .sel-actions button { flex:1; padding:12px; border-radius:10px; border:none; color:#fff; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .sel-actions .deliver-btn { background:#1F8A5F; }
+  .sel-actions .delete-btn { background:#D64545; }
+  .sel-actions button:disabled { background:#3A3D42; }
 </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel" data-presets="react">
+<div id="app"></div>
 
-const { useState, useEffect, useRef, useCallback } = React;
+<script>
+(function () {
+  "use strict";
 
-const STORAGE_KEY = "courier-route-v1";
-const INK = "#15171A", SUB = "#6B7280", PAPER = "#F4F5F2",
-      LINE = "#E1E3DE", SAFETY = "#FF6A13", DONE = "#1F8A5F", DANGER = "#D64545";
+  var STORAGE_KEY = "courier-route-v1";
+  var svg = {
+    grip: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
+    check: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+    reset: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-9.5L1 10"/></svg>',
+    x: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    list: '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+    checkSquare: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+    square: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>'
+  };
 
-function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
-function todayLabel() {
-  return new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
-}
-function splitIntoStops(raw) {
-  return raw.split(/\n\s*\n+/).map(b => b.trim()).filter(Boolean);
-}
+  var state = {
+    items: loadItems(),
+    draft: "",
+    confirmClear: false,
+    editingId: null,
+    editText: "",
+    selectMode: false,
+    selectedIds: {}
+  };
 
-// ---- tiny inline icon set (no external icon library needed) ----
-const Icon = {
-  grip: (p) => <svg {...p} viewBox="0 0 24 24" width={p.size||18} height={p.size||18} fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>,
-  plus: (p) => <svg {...p} viewBox="0 0 24 24" width={p.size||18} height={p.size||18} fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
-  trash: (p) => <svg {...p} viewBox="0 0 24 24" width={p.size||16} height={p.size||16} fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>,
-  check: (p) => <svg {...p} viewBox="0 0 24 24" width={p.size||16} height={p.size||16} fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>,
-  reset: (p) => <svg {...p} viewBox="0 0 24 24" width={p.size||18} height={p.size||18} fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-9.5L1 10"/></svg>,
-  x: (p) => <svg {...p} viewBox="0 0 24 24" width={p.size||14} height={p.size||14} fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-  list: (p) => <svg {...p} viewBox="0 0 24 24" width={p.size||30} height={p.size||30} fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>,
-  checkSquare: (p) => <svg {...p} viewBox="0 0 24 24" width={p.size||20} height={p.size||20} fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
-  square: (p) => <svg {...p} viewBox="0 0 24 24" width={p.size||20} height={p.size||20} fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>,
-};
-
-function CourierRoute() {
-  const [items, setItems] = useState(() => {
+  function loadItems() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      var raw = localStorage.getItem(STORAGE_KEY);
       return raw ? JSON.parse(raw) : [];
     } catch (e) { return []; }
-  });
-  const [draft, setDraft] = useState("");
-  const [confirmClear, setConfirmClear] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [editText, setEditText] = useState("");
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  }
+  function saveItems() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items)); } catch (e) {}
+  }
+  function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+  function todayLabel() {
+    return new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+  }
+  function splitIntoStops(raw) {
+    return raw.split(/\n\s*\n+/).map(function (b) { return b.trim(); }).filter(Boolean);
+  }
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
 
-  const rowRefs = useRef({});
-  const dragState = useRef(null);
-  const [dragVisual, setDragVisual] = useState(null);
+  var app = document.getElementById("app");
 
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {}
-  }, [items]);
+  function render() {
+    var deliveredCount = state.items.filter(function (i) { return i.delivered; }).length;
+    var pct = state.items.length ? Math.round((deliveredCount / state.items.length) * 100) : 0;
+    var selectedCount = Object.keys(state.selectedIds).length;
+    var allSelected = selectedCount === state.items.length && state.items.length > 0;
 
-  const addStops = useCallback(() => {
-    const blocks = splitIntoStops(draft);
-    if (blocks.length === 0) return;
-    setItems(prev => [...prev, ...blocks.map(text => ({ id: uid(), text, delivered: false }))]);
-    setDraft("");
-  }, [draft]);
+    var html = "";
+    html += '<div class="header">';
+    html += '  <div class="header-top">';
+    html += '    <div><div class="date">' + todayLabel() + '</div><div class="title bc">Today\'s route</div></div>';
+    html += '    <div class="header-btns">';
+    html += '      <button class="btn-select' + (state.selectMode ? ' active' : '') + '" data-action="toggle-select-mode">' + (state.selectMode ? "Done" : "Select") + '</button>';
+    html += '      <button class="btn-reset" data-action="show-confirm-clear">' + svg.reset + '</button>';
+    html += '    </div>';
+    html += '  </div>';
+    html += '  <div class="progress-row"><span>' + deliveredCount + ' of ' + state.items.length + ' delivered</span><span>' + pct + '%</span></div>';
+    html += '  <div class="progress-track"><div class="progress-fill" style="width:' + pct + '%"></div></div>';
+    html += '</div>';
 
-  const toggleDelivered = (id) => setItems(prev => prev.map(it => it.id === id ? { ...it, delivered: !it.delivered } : it));
-  const removeItem = (id) => setItems(prev => prev.filter(it => it.id !== id));
-  const startEdit = (it) => { setEditingId(it.id); setEditText(it.text); };
-  const commitEdit = () => {
-    setItems(prev => prev.map(it => it.id === editingId ? { ...it, text: editText.trim() || it.text } : it));
-    setEditingId(null);
-  };
-  const resetRoute = () => { setItems([]); setConfirmClear(false); };
-  const clearDelivered = () => { setItems(prev => prev.filter(it => !it.delivered)); setConfirmClear(false); };
+    if (state.confirmClear) {
+      html += '<div class="clear-banner">';
+      html += '  <div class="clear-banner-title">Reset today\'s route?</div>';
+      html += '  <div class="clear-banner-actions">';
+      html += '    <button data-action="clear-delivered">Remove delivered only</button>';
+      html += '    <button class="btn-danger" data-action="reset-route">Clear all stops</button>';
+      html += '    <button class="btn-ghost" data-action="hide-confirm-clear">' + svg.x + '</button>';
+      html += '  </div>';
+      html += '</div>';
+    }
 
-  const deliveredCount = items.filter(i => i.delivered).length;
-  const pct = items.length ? Math.round((deliveredCount / items.length) * 100) : 0;
+    if (state.selectMode) {
+      html += '<div class="select-toolbar">';
+      html += '  <button data-action="select-all">' + (allSelected ? "Deselect all" : "Select all") + '</button>';
+      html += '  <span class="select-count">' + selectedCount + ' selected</span>';
+      html += '</div>';
+    }
 
-  const toggleSelectMode = () => { setSelectMode(v => !v); setSelectedIds(new Set()); };
-  const toggleSelected = (id) => setSelectedIds(prev => {
-    const next = new Set(prev);
-    next.has(id) ? next.delete(id) : next.add(id);
-    return next;
-  });
-  const selectAll = () => setSelectedIds(prev => prev.size === items.length ? new Set() : new Set(items.map(i => i.id)));
-  const deleteSelected = () => { setItems(prev => prev.filter(it => !selectedIds.has(it.id))); setSelectedIds(new Set()); setSelectMode(false); };
-  const markSelectedDelivered = () => {
-    setItems(prev => prev.map(it => selectedIds.has(it.id) ? { ...it, delivered: true } : it));
-    setSelectedIds(new Set()); setSelectMode(false);
-  };
+    html += '<div class="list" style="padding-bottom:' + (state.selectMode ? 90 : 150) + 'px">';
+    if (state.items.length === 0) {
+      html += '<div class="empty">' + svg.list + '<div class="h">No stops yet</div><div class="s">Paste your addresses below — separate each stop with a blank line — then drag the handle to put them in delivery order.</div></div>';
+    } else {
+      state.items.forEach(function (it, idx) {
+        var isSelected = !!state.selectedIds[it.id];
+        var rowClasses = "row" + (isSelected ? " selected" : "") + (it.delivered ? " delivered" : "");
+        html += '<div class="' + rowClasses + '" data-id="' + it.id + '" data-row>';
 
-  const rowHeight = () => {
-    const el = rowRefs.current[items[0]?.id];
-    return el ? el.getBoundingClientRect().height : 64;
-  };
+        if (state.selectMode) {
+          html += '<div class="checkbox' + (isSelected ? ' checked' : '') + '" data-action="toggle-select" data-id="' + it.id + '">' + (isSelected ? svg.checkSquare : svg.square) + '</div>';
+        } else {
+          html += '<div class="grip" data-drag-handle data-id="' + it.id + '">' + svg.grip + '</div>';
+        }
 
-  const onHandlePointerDown = (e, id) => {
-    if (selectMode) return;
-    e.preventDefault();
-    const baseOrder = items.map(i => i.id);
-    const baseIndex = baseOrder.indexOf(id);
-    dragState.current = { id, baseOrder, baseIndex, startY: e.clientY, currentIndex: baseIndex };
-    setDragVisual({ id, offset: 0, active: true });
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-  };
+        html += '<div class="num' + (it.delivered ? ' done' : '') + ' bc">' + (idx + 1) + '</div>';
 
-  const onPointerMove = (e) => {
-    const ds = dragState.current;
-    if (!ds) return;
-    const rh = rowHeight();
-    const totalOffset = e.clientY - ds.startY;
-    const indexDelta = Math.round(totalOffset / rh);
-    const newIndex = Math.max(0, Math.min(ds.baseOrder.length - 1, ds.baseIndex + indexDelta));
-    if (newIndex !== ds.currentIndex) {
-      const order = [...ds.baseOrder];
-      order.splice(order.indexOf(ds.id), 1);
-      order.splice(newIndex, 0, ds.id);
-      ds.currentIndex = newIndex;
-      setItems(prev => {
-        const map = new Map(prev.map(it => [it.id, it]));
-        return order.map(oid => map.get(oid));
+        html += '<div class="text-wrap" data-action="' + (state.selectMode ? 'toggle-select' : 'start-edit') + '" data-id="' + it.id + '">';
+        if (state.editingId === it.id) {
+          html += '<textarea class="edit-box" data-edit-box rows="' + Math.min(8, (state.editText.split("\n").length || 1)) + '">' + escapeHtml(state.editText) + '</textarea>';
+        } else {
+          html += '<div class="text' + (it.delivered ? ' delivered' : '') + '">' + escapeHtml(it.text) + '</div>';
+        }
+        html += '</div>';
+
+        if (!state.selectMode) {
+          html += '<button class="row-btn' + (it.delivered ? ' done' : '') + '" data-action="toggle-delivered" data-id="' + it.id + '">' + svg.check + '</button>';
+          html += '<button class="del-btn" data-action="delete-item" data-id="' + it.id + '">' + svg.trash + '</button>';
+        }
+
+        html += '</div>';
       });
     }
-    const snappedOffset = (ds.currentIndex - ds.baseIndex) * rh;
-    setDragVisual({ id: ds.id, offset: totalOffset - snappedOffset, active: true });
-  };
+    html += '</div>';
 
-  const onPointerUp = () => {
-    dragState.current = null;
-    setDragVisual(null);
+    html += '<div class="bottom-fixed">';
+    if (state.selectMode) {
+      html += '<div class="sel-actions">';
+      html += '  <button class="deliver-btn" data-action="mark-selected-delivered"' + (selectedCount === 0 ? " disabled" : "") + '>' + svg.check + ' Mark delivered</button>';
+      html += '  <button class="delete-btn" data-action="delete-selected"' + (selectedCount === 0 ? " disabled" : "") + '>' + svg.trash + ' Delete</button>';
+      html += '</div>';
+    } else {
+      html += '<div class="add-wrap"><div class="add-inner"><div class="add-bar">';
+      html += '  <textarea id="draft-input" placeholder="Paste one or more stops — separate each with a blank line" rows="' + Math.min(6, Math.max(1, state.draft.split("\n").length)) + '">' + escapeHtml(state.draft) + '</textarea>';
+      html += '  <button class="add-btn" data-action="add-stops">' + svg.plus + '</button>';
+      html += '</div></div></div>';
+    }
+    html += '</div>';
+
+    app.innerHTML = html;
+
+    // restore focus for active textareas
+    if (state.editingId !== null) {
+      var eb = app.querySelector("[data-edit-box]");
+      if (eb) {
+        eb.focus();
+        eb.setSelectionRange(eb.value.length, eb.value.length);
+        eb.addEventListener("input", function () { state.editText = eb.value; });
+        eb.addEventListener("blur", commitEdit);
+      }
+    }
+    var draftInput = document.getElementById("draft-input");
+    if (draftInput) {
+      draftInput.addEventListener("input", function () {
+        state.draft = draftInput.value;
+        draftInput.rows = Math.min(6, Math.max(1, state.draft.split("\n").length));
+      });
+    }
+  }
+
+  // ---- actions ----
+  function addStops() {
+    var blocks = splitIntoStops(state.draft);
+    if (blocks.length === 0) return;
+    blocks.forEach(function (text) {
+      state.items.push({ id: uid(), text: text, delivered: false });
+    });
+    state.draft = "";
+    saveItems();
+    render();
+  }
+
+  function toggleDelivered(id) {
+    state.items = state.items.map(function (it) {
+      return it.id === id ? Object.assign({}, it, { delivered: !it.delivered }) : it;
+    });
+    saveItems();
+    render();
+  }
+
+  function deleteItem(id) {
+    state.items = state.items.filter(function (it) { return it.id !== id; });
+    saveItems();
+    render();
+  }
+
+  function startEdit(id) {
+    var it = state.items.find(function (i) { return i.id === id; });
+    if (!it || it.delivered) return;
+    state.editingId = id;
+    state.editText = it.text;
+    render();
+  }
+
+  function commitEdit() {
+    if (state.editingId === null) return;
+    state.items = state.items.map(function (it) {
+      return it.id === state.editingId ? Object.assign({}, it, { text: state.editText.trim() || it.text }) : it;
+    });
+    state.editingId = null;
+    saveItems();
+    render();
+  }
+
+  function resetRoute() {
+    state.items = [];
+    state.confirmClear = false;
+    saveItems();
+    render();
+  }
+
+  function clearDelivered() {
+    state.items = state.items.filter(function (it) { return !it.delivered; });
+    state.confirmClear = false;
+    saveItems();
+    render();
+  }
+
+  function toggleSelectMode() {
+    state.selectMode = !state.selectMode;
+    state.selectedIds = {};
+    render();
+  }
+
+  function toggleSelected(id) {
+    if (state.selectedIds[id]) delete state.selectedIds[id];
+    else state.selectedIds[id] = true;
+    render();
+  }
+
+  function selectAll() {
+    var allSelected = Object.keys(state.selectedIds).length === state.items.length && state.items.length > 0;
+    if (allSelected) {
+      state.selectedIds = {};
+    } else {
+      state.selectedIds = {};
+      state.items.forEach(function (it) { state.selectedIds[it.id] = true; });
+    }
+    render();
+  }
+
+  function deleteSelected() {
+    state.items = state.items.filter(function (it) { return !state.selectedIds[it.id]; });
+    state.selectedIds = {};
+    state.selectMode = false;
+    saveItems();
+    render();
+  }
+
+  function markSelectedDelivered() {
+    state.items = state.items.map(function (it) {
+      return state.selectedIds[it.id] ? Object.assign({}, it, { delivered: true }) : it;
+    });
+    state.selectedIds = {};
+    state.selectMode = false;
+    saveItems();
+    render();
+  }
+
+  // ---- click delegation ----
+  app.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-action]");
+    if (!t) return;
+    var action = t.getAttribute("data-action");
+    var id = t.getAttribute("data-id");
+    switch (action) {
+      case "toggle-select-mode": toggleSelectMode(); break;
+      case "show-confirm-clear": state.confirmClear = true; render(); break;
+      case "hide-confirm-clear": state.confirmClear = false; render(); break;
+      case "clear-delivered": clearDelivered(); break;
+      case "reset-route": resetRoute(); break;
+      case "select-all": selectAll(); break;
+      case "toggle-select": toggleSelected(id); break;
+      case "toggle-delivered": toggleDelivered(id); break;
+      case "delete-item": deleteItem(id); break;
+      case "start-edit": startEdit(id); break;
+      case "mark-selected-delivered": markSelectedDelivered(); break;
+      case "delete-selected": deleteSelected(); break;
+      case "add-stops": addStops(); break;
+    }
+  });
+
+  // ---- drag to reorder ----
+  var drag = null;
+
+  app.addEventListener("pointerdown", function (e) {
+    var handle = e.target.closest("[data-drag-handle]");
+    if (!handle || state.selectMode) return;
+    e.preventDefault();
+    var id = handle.getAttribute("data-id");
+    var baseOrder = state.items.map(function (i) { return i.id; });
+    var baseIndex = baseOrder.indexOf(id);
+    var rowEl = app.querySelector('.row[data-id="' + id + '"]');
+    var rh = rowEl ? rowEl.getBoundingClientRect().height : 64;
+    drag = { id: id, baseOrder: baseOrder, baseIndex: baseIndex, currentIndex: baseIndex, startY: e.clientY, rowHeight: rh };
+    rowEl.classList.add("dragging");
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  });
+
+  function onPointerMove(e) {
+    if (!drag) return;
+    var totalOffset = e.clientY - drag.startY;
+    var indexDelta = Math.round(totalOffset / drag.rowHeight);
+    var newIndex = Math.max(0, Math.min(drag.baseOrder.length - 1, drag.baseIndex + indexDelta));
+
+    if (newIndex !== drag.currentIndex) {
+      var order = drag.baseOrder.slice();
+      order.splice(order.indexOf(drag.id), 1);
+      order.splice(newIndex, 0, drag.id);
+      drag.currentIndex = newIndex;
+      var map = {};
+      state.items.forEach(function (it) { map[it.id] = it; });
+      state.items = order.map(function (oid) { return map[oid]; });
+      render();
+      var rowEl = app.querySelector('.row[data-id="' + drag.id + '"]');
+      if (rowEl) rowEl.classList.add("dragging");
+    }
+
+    var snappedOffset = (drag.currentIndex - drag.baseIndex) * drag.rowHeight;
+    var offset = totalOffset - snappedOffset;
+    var el = app.querySelector('.row[data-id="' + drag.id + '"]');
+    if (el) el.style.transform = "translateY(" + offset + "px)";
+  }
+
+  function onPointerUp() {
+    drag = null;
     window.removeEventListener("pointermove", onPointerMove);
     window.removeEventListener("pointerup", onPointerUp);
-  };
+    saveItems();
+    render();
+  }
 
-  useEffect(() => () => {
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
-  }, []);
+  // ---- keyboard: Enter to commit edit textarea handled via blur ----
 
-  return (
-    <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: PAPER, minHeight: "100vh", color: INK }}>
-      <div style={{ maxWidth: 440, margin: "0 auto", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-        <div style={{ background: INK, color: "#fff", padding: "20px 18px 16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div>
-              <div className="bc" style={{ fontSize: 13, letterSpacing: 0.3, color: "#9CA0A6" }}>{todayLabel()}</div>
-              <div className="bc" style={{ fontSize: 30, fontWeight: 700, lineHeight: 1.05, marginTop: 2 }}>Today's route</div>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={toggleSelectMode} style={{ background: selectMode ? SAFETY : "transparent", border: `1px solid ${selectMode ? SAFETY : "#3A3D42"}`, borderRadius: 8, padding: "8px 10px", color: selectMode ? "#fff" : "#C7C9CC", fontSize: 13 }}>
-                {selectMode ? "Done" : "Select"}
-              </button>
-              <button onClick={() => setConfirmClear(true)} aria-label="Reset route" style={{ background: "transparent", border: "1px solid #3A3D42", borderRadius: 8, padding: 8, color: "#C7C9CC", display: "flex" }}>
-                <Icon.reset />
-              </button>
-            </div>
-          </div>
-          <div style={{ marginTop: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#C7C9CC", marginBottom: 6 }}>
-              <span>{deliveredCount} of {items.length} delivered</span>
-              <span>{pct}%</span>
-            </div>
-            <div style={{ height: 6, background: "#2A2C30", borderRadius: 3, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: SAFETY, borderRadius: 3, transition: "width 200ms ease" }} />
-            </div>
-          </div>
-        </div>
-
-        {confirmClear && (
-          <div style={{ background: "#FFF3EC", borderBottom: `1px solid ${LINE}`, padding: "12px 18px" }}>
-            <div style={{ fontSize: 14, marginBottom: 8 }}>Reset today's route?</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button onClick={clearDelivered} style={{ fontSize: 13, padding: "6px 10px", borderRadius: 6, border: `1px solid ${LINE}`, background: "#fff" }}>Remove delivered only</button>
-              <button onClick={resetRoute} style={{ fontSize: 13, padding: "6px 10px", borderRadius: 6, border: "none", background: DANGER, color: "#fff" }}>Clear all stops</button>
-              <button onClick={() => setConfirmClear(false)} style={{ fontSize: 13, padding: "6px 10px", borderRadius: 6, border: `1px solid ${LINE}`, background: "transparent", marginLeft: "auto" }}><Icon.x /></button>
-            </div>
-          </div>
-        )}
-
-        {selectMode && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", background: "#fff", borderBottom: `1px solid ${LINE}` }}>
-            <button onClick={selectAll} style={{ fontSize: 13, color: SAFETY, background: "none", border: "none", padding: 0 }}>
-              {selectedIds.size === items.length && items.length > 0 ? "Deselect all" : "Select all"}
-            </button>
-            <span style={{ fontSize: 13, color: SUB }}>{selectedIds.size} selected</span>
-          </div>
-        )}
-
-        <div style={{ flex: 1, paddingBottom: selectMode ? 90 : 150 }}>
-          {items.length === 0 && (
-            <div style={{ textAlign: "center", color: SUB, padding: "60px 24px" }}>
-              <Icon.list style={{ margin: "0 auto 10px", opacity: 0.5 }} />
-              <div style={{ fontSize: 15, marginBottom: 4 }}>No stops yet</div>
-              <div style={{ fontSize: 13 }}>Paste your addresses below — separate each stop with a blank line — then drag the handle to put them in delivery order.</div>
-            </div>
-          )}
-
-          {items.map((it, idx) => {
-            const isDragging = dragVisual && dragVisual.id === it.id;
-            const isSelected = selectedIds.has(it.id);
-            return (
-              <div key={it.id} ref={el => (rowRefs.current[it.id] = el)}
-                style={{
-                  display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px",
-                  background: isDragging ? "#fff" : isSelected ? "#FFF3EC" : "transparent",
-                  borderBottom: `1px solid ${LINE}`, position: "relative",
-                  transform: isDragging ? `translateY(${dragVisual.offset}px)` : "none",
-                  boxShadow: isDragging ? "0 8px 20px rgba(0,0,0,0.15)" : "none",
-                  zIndex: isDragging ? 10 : 1, opacity: it.delivered ? 0.55 : 1,
-                }}
-                onClick={() => selectMode && toggleSelected(it.id)}
-              >
-                {selectMode ? (
-                  <div style={{ padding: 6, color: isSelected ? SAFETY : "#C7C9CC", flexShrink: 0 }}>
-                    {isSelected ? <Icon.checkSquare /> : <Icon.square />}
-                  </div>
-                ) : (
-                  <div onPointerDown={(e) => onHandlePointerDown(e, it.id)} style={{ touchAction: "none", color: "#B4B7BB", padding: 6, cursor: "grab", display: "flex", marginTop: 2 }}>
-                    <Icon.grip />
-                  </div>
-                )}
-
-                <div className="bc" style={{ width: 26, height: 26, borderRadius: "50%", background: it.delivered ? DONE : SAFETY, color: "#fff", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-                  {idx + 1}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }} onClick={(e) => { if (selectMode) return; e.stopPropagation(); if (!it.delivered) startEdit(it); }}>
-                  {editingId === it.id ? (
-                    <textarea autoFocus value={editText} onChange={(e) => setEditText(e.target.value)} onBlur={commitEdit}
-                      rows={Math.min(8, editText.split("\n").length || 1)}
-                      style={{ width: "100%", fontSize: 13.5, lineHeight: 1.4, padding: "6px 8px", border: `1px solid ${SAFETY}`, borderRadius: 6, outline: "none", resize: "vertical" }} />
-                  ) : (
-                    <div style={{ fontSize: 13.5, lineHeight: 1.4, whiteSpace: "pre-line", textDecoration: it.delivered ? "line-through" : "none", color: it.delivered ? SUB : INK }}>
-                      {it.text}
-                    </div>
-                  )}
-                </div>
-
-                {!selectMode && (
-                  <React.Fragment>
-                    <button onClick={(e) => { e.stopPropagation(); toggleDelivered(it.id); }} aria-label="Mark delivered"
-                      style={{ width: 30, height: 30, borderRadius: "50%", border: `1.5px solid ${it.delivered ? DONE : "#C7C9CC"}`, background: it.delivered ? DONE : "transparent", color: it.delivered ? "#fff" : "#C7C9CC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-                      <Icon.check />
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); removeItem(it.id); }} aria-label="Delete stop"
-                      style={{ color: "#C7C9CC", padding: 6, display: "flex", flexShrink: 0, marginTop: 2 }}>
-                      <Icon.trash />
-                    </button>
-                  </React.Fragment>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, display: "flex", justifyContent: "center",
-          background: selectMode ? "transparent" : "linear-gradient(0deg, #F4F5F2 60%, rgba(244,245,242,0))", paddingTop: selectMode ? 0 : 20 }}>
-          {selectMode ? (
-            <div style={{ width: "100%", maxWidth: 440, background: INK, padding: "12px 14px", display: "flex", gap: 8 }}>
-              <button onClick={markSelectedDelivered} disabled={selectedIds.size === 0}
-                style={{ flex: 1, padding: 12, borderRadius: 10, border: "none", background: selectedIds.size === 0 ? "#3A3D42" : DONE, color: "#fff", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                <Icon.check /> Mark delivered
-              </button>
-              <button onClick={deleteSelected} disabled={selectedIds.size === 0}
-                style={{ flex: 1, padding: 12, borderRadius: 10, border: "none", background: selectedIds.size === 0 ? "#3A3D42" : DANGER, color: "#fff", fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                <Icon.trash /> Delete
-              </button>
-            </div>
-          ) : (
-            <div style={{ width: "100%", maxWidth: 440, padding: "0 14px 14px" }}>
-              <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 12, padding: "8px 8px 8px 12px", display: "flex", alignItems: "flex-end", gap: 8, boxShadow: "0 4px 14px rgba(0,0,0,0.08)" }}>
-                <textarea value={draft} onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Paste one or more stops — separate each with a blank line"
-                  rows={Math.min(6, Math.max(1, draft.split("\n").length))}
-                  style={{ flex: 1, border: "none", outline: "none", resize: "none", fontSize: 14, padding: "6px 0", fontFamily: "inherit", maxHeight: 160, overflowY: "auto" }} />
-                <button onClick={addStops} aria-label="Add stop" style={{ width: 36, height: 36, borderRadius: 9, background: SAFETY, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "none" }}>
-                  <Icon.plus />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<CourierRoute />);
+  render();
+})();
 </script>
 </body>
 </html>
