@@ -27,7 +27,7 @@
   .date { font-size:13px; letter-spacing:.3px; color:#9CA0A6; }
   .title { font-size:30px; font-weight:700; line-height:1.05; margin-top:2px; }
   .header-btns { display:flex; gap:8px; }
-  .btn-select { border-radius:8px; padding:8px 10px; font-size:13px; border:1px solid #3A3D42; background:transparent; color:#C7C9CC; }
+  .btn-select { border-radius:8px; padding:8px 10px; font-size:13px; border:1px solid #3A3D42; background:transparent; color:#C7C9CC; display:inline-flex; align-items:center; gap:5px; }
   .btn-select.active { background:#FF6A13; border-color:#FF6A13; color:#fff; }
   .btn-reset { border-radius:8px; padding:8px; border:1px solid #3A3D42; background:transparent; color:#C7C9CC; display:flex; }
   .progress-row { display:flex; justify-content:space-between; font-size:13px; color:#C7C9CC; margin:14px 0 6px; }
@@ -100,7 +100,8 @@
     x: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
     list: '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>',
     checkSquare: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
-    square: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>'
+    square: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'
   };
 
   var state = {
@@ -110,7 +111,8 @@
     editingId: null,
     editText: "",
     selectMode: false,
-    selectedIds: {}
+    selectedIds: {},
+    copyFeedback: false
   };
 
   function loadItems() {
@@ -146,6 +148,9 @@
     html += '  <div class="header-top">';
     html += '    <div><div class="date">' + todayLabel() + '</div><div class="title bc">Today\'s route</div></div>';
     html += '    <div class="header-btns">';
+    if (!state.selectMode) {
+      html += '      <button class="btn-select" data-action="copy-list">' + (state.copyFeedback ? "Copied!" : svg.copy + " Copy") + '</button>';
+    }
     html += '      <button class="btn-select' + (state.selectMode ? ' active' : '') + '" data-action="toggle-select-mode">' + (state.selectMode ? "Done" : "Select") + '</button>';
     html += '      <button class="btn-reset" data-action="show-confirm-clear">' + svg.reset + '</button>';
     html += '    </div>';
@@ -286,6 +291,51 @@
     render();
   }
 
+  function buildNumberedText() {
+    return state.items
+      .map(function (it, idx) { return (idx + 1) + ". " + it.text; })
+      .join("\n\n");
+  }
+
+  function showCopyFeedback() {
+    state.copyFeedback = true;
+    render();
+    setTimeout(function () {
+      state.copyFeedback = false;
+      render();
+    }, 1500);
+  }
+
+  function copyList() {
+    if (state.items.length === 0) return;
+    var text = buildNumberedText();
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showCopyFeedback).catch(function () {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try {
+      document.execCommand("copy");
+      showCopyFeedback();
+    } catch (e) {
+      window.prompt("Copy this text manually:", text);
+    }
+    document.body.removeChild(ta);
+  }
+
   function resetRoute() {
     state.items = [];
     state.confirmClear = false;
@@ -349,6 +399,7 @@
     var id = t.getAttribute("data-id");
     switch (action) {
       case "toggle-select-mode": toggleSelectMode(); break;
+      case "copy-list": copyList(); break;
       case "show-confirm-clear": state.confirmClear = true; render(); break;
       case "hide-confirm-clear": state.confirmClear = false; render(); break;
       case "clear-delivered": clearDelivered(); break;
