@@ -101,6 +101,12 @@
   .sort-btn { flex:1; padding:13px 12px; border-radius:13px; border:none; background:var(--accent); color:#fff; font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:7px; }
   .sort-btn:disabled { opacity:.85; }
   .cancel-btn { padding:0 16px; border-radius:13px; border:1px solid var(--line2); background:var(--btn-bg); color:var(--cancel-text); font-size:13.5px; flex-shrink:0; }
+  .pkg-btn { width:100%; margin-top:8px; padding:12px; border-radius:13px; border:1.5px solid var(--line2); background:var(--card); color:var(--text); font-size:14px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:7px; }
+  .pkg-btn svg { width:16px; height:16px; }
+  .pkg-btn.on { border-color:var(--accent); color:var(--accent); }
+  .pkg-btn:disabled { opacity:.55; }
+  .pkg-chip { font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; background:var(--seg-bg); color:var(--muted); white-space:nowrap; flex-shrink:0; }
+  .pkg-chip.unk { background:var(--warn-bg); color:var(--warn-text); }
   .link-btn { background:none; border:none; color:var(--muted); font-size:12.5px; padding:9px 2px 0; text-decoration:underline; text-underline-offset:2px; text-align:left; }
   .start-input { width:100%; padding:11px 12px; border-radius:12px; border:1px solid var(--line2); background:var(--input-bg); color:var(--text); font-size:14px; margin-top:8px; outline:none; }
   .start-input:focus { border-color:var(--accent); }
@@ -237,6 +243,7 @@
     pin: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
     chevUp: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>',
     chevDown: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>',
+    box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 7.5L12 12.5l8.7-5M12 22V12.5"/></svg>',
     camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
     moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>',
@@ -286,6 +293,10 @@
       undoDeleted_1: "{n} stop deleted", undoDeleted_n: "{n} stops deleted",
       undoMarked_1: "{n} stop marked delivered", undoMarked_n: "{n} stops marked delivered",
       undoSorted: "Route sorted",
+      pkgSort: "Sort by package", pkgRevert: "Back to my order",
+      undoPkgSorted: "Sorted by package", pkgAlready: "Already in package order.", undoPkgReverted: "Your order restored",
+      pkgUnknown_1: "{n} stop has no recognized package (ЗОЖ, Органик, Дурысфуд, Топфуд) and was put at the end.",
+      pkgUnknown_n: "{n} stops have no recognized package (ЗОЖ, Органик, Дурысфуд, Топфуд) and were put at the end.",
       undoMovedTop_1: "Moved {n} stop to the top", undoMovedTop_n: "Moved {n} stops to the top",
       undoMovedBottom_1: "Moved {n} stop to the bottom", undoMovedBottom_n: "Moved {n} stops to the bottom",
       undoMovedPos_1: "Moved {n} stop to position {p}", undoMovedPos_n: "Moved {n} stops to position {p}",
@@ -325,6 +336,9 @@
       movePosError: "Сначала введите нужную позицию (например, 3), затем нажмите «Ок».",
       undo: "Отменить", undoStopDeleted: "Адрес удалён", undoRouteCleared: "Маршрут очищен", undoDeliveredRemoved: "Доставленные адреса удалены",
       undoDeleted: "Удалено адресов: {n}", undoMarked: "Отмечено доставленными: {n}", undoSorted: "Маршрут отсортирован",
+      pkgSort: "Сортировать по пакетам", pkgRevert: "Вернуть мой порядок",
+      undoPkgSorted: "Отсортировано по пакетам", pkgAlready: "Список уже в порядке по пакетам.", undoPkgReverted: "Порядок восстановлен",
+      pkgUnknown: "Адресов без распознанного пакета: {n} (ЗОЖ, Органик, Дурысфуд, Топфуд) — они в конце списка.",
       undoMovedTop: "Перемещено вверх: {n}", undoMovedBottom: "Перемещено вниз: {n}", undoMovedPos: "Перемещено на позицию {p}: {n}",
       manualCopy: "Скопируйте текст вручную:",
       settings: "Настройки", theme: "Тема", themeAuto: "Авто", themeLight: "Светлая", themeDark: "Тёмная",
@@ -362,6 +376,9 @@
       movePosError: "Алдымен қажетті орынды жазыңыз (мысалы, 3), сосын «Өту» түймесін басыңыз.",
       undo: "Қайтару", undoStopDeleted: "Мекенжай жойылды", undoRouteCleared: "Маршрут тазартылды", undoDeliveredRemoved: "Жеткізілгендер жойылды",
       undoDeleted: "Жойылды: {n}", undoMarked: "Жеткізілді деп белгіленді: {n}", undoSorted: "Маршрут сұрыпталды",
+      pkgSort: "Пакеттер бойынша сұрыптау", pkgRevert: "Менің ретіме қайтару",
+      undoPkgSorted: "Пакеттер бойынша сұрыпталды", pkgAlready: "Тізім пакеттер бойынша реттелген.", undoPkgReverted: "Реттілік қалпына келтірілді",
+      pkgUnknown: "Пакеті танылмаған мекенжай: {n} (ЗОЖ, Органик, Дурысфуд, Топфуд) — олар тізімнің соңында.",
       undoMovedTop: "Жоғарыға жылжытылды: {n}", undoMovedBottom: "Төменге жылжытылды: {n}", undoMovedPos: "{p}-орынға жылжытылды: {n}",
       manualCopy: "Мәтінді қолмен көшіріңіз:",
       settings: "Баптаулар", theme: "Тақырып", themeAuto: "Авто", themeLight: "Жарық", themeDark: "Қараңғы",
@@ -482,8 +499,17 @@
     lang: detectLang(),
     theme: loadTheme(),
     showSettings: false,
-    photo: null
+    photo: null,
+    preSort: loadPreSort()
   };
+
+  function loadPreSort() {
+    try {
+      var raw = localStorage.getItem("courier-route-presort");
+      var v = raw ? JSON.parse(raw) : null;
+      return v && Array.isArray(v.before) && Array.isArray(v.sorted) ? v : null;
+    } catch (e) { return null; }
+  }
 
   function loadCompact() {
     try { return localStorage.getItem("courier-route-compact") === "1"; } catch (e) { return false; }
@@ -699,6 +725,114 @@
     render();
   }
 
+  // ---- sort by package (ЗОЖ, Органик, Дурысфуд, Топфуд) and calories ----
+  var PACK_NAMES = ["ЗОЖ", "Органик", "Дурысфуд", "Топфуд"];
+  var PACK_RES = [/зож/i, /органик/i, /д[уұ]рыс|durys/i, /топ\s*фуд/i];
+  var CAL_ORDER = [900, 1300, 1500, 1800, 2000, 2500, 3000];
+  var CAL_RE = /(?<!\d)(900|1300|1500|1800|2000|2500|3000)(?!\d)/g;
+  var NOT_CAL_LINE = /код|домофон|калитк|подъезд|подьезд|этаж|кв\.?\s*\d|квартир|офис|тг|тенге/i;
+
+  // Reads the package and calorie value(s) out of a stop's text.
+  function packageInfo(text) {
+    var brand = -1, best = Infinity;
+    PACK_RES.forEach(function (re, i) {
+      var m = text.search(re);
+      if (m !== -1 && m < best) { best = m; brand = i; }
+    });
+    // phone numbers must not be read as calorie values
+    var clean = text.replace(/\+?\d[\d \t\u00a0\-()]{7,}\d/g, function (m) {
+      var d = m.replace(/\D/g, "");
+      return d.length >= 10 && /^[78]/.test(d) ? " " : m;
+    });
+    var lines = clean.split("\n");
+    function scan(from) {
+      var found = [];
+      for (var i = from; i < lines.length; i++) {
+        if (NOT_CAL_LINE.test(lines[i])) continue;
+        var m;
+        CAL_RE.lastIndex = 0;
+        while ((m = CAL_RE.exec(lines[i])) !== null) found.push(parseInt(m[1], 10));
+      }
+      return found;
+    }
+    var cals = scan(1);
+    if (!cals.length && lines.length === 1) cals = scan(0);
+    cals.sort(function (a, b) { return a - b; });
+    return { brand: brand, cals: cals };
+  }
+
+  // True while the list is still in the package order made by the button.
+  function isPackSorted() {
+    var ps = state.preSort;
+    if (!ps) return false;
+    var present = {}, inSorted = {};
+    state.items.forEach(function (it) { present[it.id] = true; });
+    ps.sorted.forEach(function (id) { inSorted[id] = true; });
+    var expected = ps.sorted.filter(function (id) { return present[id]; });
+    var current = state.items.map(function (it) { return it.id; }).filter(function (id) { return inSorted[id]; });
+    if (current.length < 2 || current.length !== expected.length) return false;
+    for (var i = 0; i < current.length; i++) if (current[i] !== expected[i]) return false;
+    return true;
+  }
+
+  function savePreSort() {
+    try {
+      if (state.preSort) localStorage.setItem("courier-route-presort", JSON.stringify(state.preSort));
+      else localStorage.removeItem("courier-route-presort");
+    } catch (e) {}
+  }
+
+  function togglePackageSort() {
+    if (state.items.length < 2 || state.sorting) return;
+    state.sortInfo = null;
+    state.sortError = null;
+    if (isPackSorted()) { revertPackageSort(); return; }
+
+    var before = state.items.map(function (it) { return it.id; });
+    var unknown = 0;
+    var decorated = state.items.map(function (it, i) {
+      var info = packageInfo(it.text);
+      if (info.brand < 0) unknown++;
+      var calRank = info.cals.length ? Math.min.apply(null, info.cals.map(function (c) { return CAL_ORDER.indexOf(c); })) : 99;
+      return { it: it, i: i, b: info.brand < 0 ? 99 : info.brand, c: calRank };
+    });
+    // same package + same calories keep the order they already had
+    decorated.sort(function (a, b) { return (a.b - b.b) || (a.c - b.c) || (a.i - b.i); });
+    var sorted = decorated.map(function (d) { return d.it; });
+
+    // already in package order: nothing to change, so nothing to revert later
+    var unchanged = sorted.every(function (it, i) { return it.id === before[i]; });
+    if (unchanged) {
+      state.preSort = null;
+      savePreSort();
+      state.sortInfo = t("pkgAlready") + (unknown ? " " + tn("pkgUnknown", unknown, { n: unknown }) : "");
+      render();
+      return;
+    }
+
+    pushUndo(t("undoPkgSorted"));
+    state.items = sorted;
+    state.preSort = { before: before, sorted: sorted.map(function (it) { return it.id; }) };
+    if (unknown) state.sortInfo = tn("pkgUnknown", unknown, { n: unknown });
+    savePreSort();
+    saveItems();
+    render();
+  }
+
+  function revertPackageSort() {
+    var ps = state.preSort;
+    if (!ps) return;
+    var rank = {};
+    ps.before.forEach(function (id, i) { rank[id] = i; });
+    var known = state.items.filter(function (it) { return rank[it.id] !== undefined; })
+      .sort(function (a, b) { return rank[a.id] - rank[b.id]; });
+    var added = state.items.filter(function (it) { return rank[it.id] === undefined; }); // stops added after sorting go last
+    pushUndo(t("undoPkgReverted"));
+    state.items = known.concat(added);
+    saveItems();
+    render();
+  }
+
   function toggleCompact() {
     state.compact = !state.compact;
     try { localStorage.setItem("courier-route-compact", state.compact ? "1" : "0"); } catch (e) {}
@@ -727,6 +861,7 @@
     var selectedCount = Object.keys(state.selectedIds).length;
     var allSelected = selectedCount === total && total > 0;
     var nextId = null;
+    var packOn = isPackSorted();
     for (var n = 0; n < state.items.length; n++) {
       if (!state.items[n].delivered) { nextId = state.items[n].id; break; }
     }
@@ -777,6 +912,9 @@
       html += '</button>';
       if (state.sorting) html += '<button class="cancel-btn" data-action="cancel-sort">' + escapeHtml(t("cancel")) + '</button>';
       html += '</div>';
+      var packActive = isPackSorted();
+      html += '<button class="pkg-btn' + (packActive ? ' on' : '') + '" data-action="toggle-pkg-sort"' + (state.sorting ? " disabled" : "") + '>' +
+        (packActive ? svg.reset + ' ' + escapeHtml(t("pkgRevert")) : svg.box + ' ' + escapeHtml(t("pkgSort"))) + '</button>';
       if (!state.sorting) {
         html += '<button class="link-btn" data-action="toggle-start">' + escapeHtml(state.showStart ? t("useLocLink") : t("startLink")) + '</button>';
       }
@@ -826,10 +964,16 @@
         }
         var geoFailed = it.geo && it.geo.failed && it.geo.key === firstLineKey(it.text) && !it.delivered;
         var asCompact = state.compact && state.editingId !== it.id;
+        var chipHtml = "";
+        if (packOn) {
+          var pi = packageInfo(it.text);
+          var chipText = (pi.brand >= 0 ? PACK_NAMES[pi.brand] : "?") + (pi.cals.length ? " · " + pi.cals.join("+") : "");
+          chipHtml = '<span class="pkg-chip' + (pi.brand < 0 ? ' unk' : '') + '">' + escapeHtml(chipText) + '</span>';
+        }
 
         html += '<div class="body' + (asCompact ? ' c-body' : '') + '" data-action="' + (state.selectMode ? 'toggle-select' : 'start-edit') + '" data-id="' + it.id + '">';
         if (asCompact) {
-          html += '<div class="c-line">' + numHtml;
+          html += '<div class="c-line">' + numHtml + chipHtml;
           if (geoFailed) html += '<span class="geo-warn">⚠</span>';
           html += '<div class="text' + (it.delivered ? ' delivered' : '') + '">' + escapeHtml(it.text.split("\n")[0].trim()) + '</div>';
           var ph = firstPhone(it.text);
@@ -843,6 +987,7 @@
         } else {
           html += '<div class="meta">' + numHtml;
           if (isNext) html += '<span class="tag-next">' + escapeHtml(t("next")) + '</span>';
+          html += chipHtml;
           if (geoFailed) html += '<span class="geo-warn">' + escapeHtml(t("notFound")) + '</span>';
           html += '</div>';
           if (state.editingId === it.id) {
@@ -1480,6 +1625,7 @@
     switch (action) {
       case "toggle-select-mode": toggleSelectMode(); break;
       case "toggle-compact": toggleCompact(); break;
+      case "toggle-pkg-sort": togglePackageSort(); break;
       case "copy-list": copyList(); break;
       case "undo": undoLast(); break;
       case "take-photo": startPhoto(id); break;
