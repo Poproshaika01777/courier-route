@@ -156,6 +156,8 @@
   .c-body { padding:8px 0 8px 2px; display:flex; align-items:center; }
   .c-line { display:flex; align-items:center; gap:8px; width:100%; }
   .c-line .text { flex:1; min-width:0; }
+  .c-main { flex:1; min-width:0; }
+  .c-main .pkg-chip { display:inline-block; margin-top:4px; }
   .wa-btn { flex-shrink:0; width:32px; height:32px; border-radius:50%; background:var(--ok-soft); color:var(--ok-text); display:flex; align-items:center; justify-content:center; text-decoration:none; }
 
   .edit-box { width:100%; font-size:14px; line-height:1.4; padding:8px 10px; border:1.5px solid var(--accent); border-radius:10px; outline:none; resize:vertical; background:var(--input-bg); color:var(--text); -webkit-user-select:text; user-select:text; }
@@ -745,20 +747,48 @@
       return d.length >= 10 && /^[78]/.test(d) ? " " : m;
     });
     var lines = clean.split("\n");
+    // "2 пакета", "(2 пакета)", "кк - 2 пакета", "x2" -> 2 (right after the calories),
+    // "2 пакета по 1500" -> 2 (right before them). No mention means 1 package.
+    function packCount(after, before) {
+      var m = after.match(/^\s*[xх×]\s*(\d+)/i) || after.match(/(\d+)\s*пакет/i);
+      if (!m && before) m = before.match(/(\d+)\s*пакет[а-яё]*\s*(?:по|[xх×\-])?\s*$/i);
+      var n = m ? parseInt(m[1], 10) : null;
+      return n && n > 0 && n <= 20 ? n : null;
+    }
     function scan(from) {
       var found = [];
       for (var i = from; i < lines.length; i++) {
-        if (NOT_CAL_LINE.test(lines[i])) continue;
-        var m;
+        var line = lines[i];
+        if (NOT_CAL_LINE.test(line)) continue;
+        var hits = [], m;
         CAL_RE.lastIndex = 0;
-        while ((m = CAL_RE.exec(lines[i])) !== null) found.push(parseInt(m[1], 10));
+        while ((m = CAL_RE.exec(line)) !== null) hits.push({ cal: parseInt(m[1], 10), start: m.index, end: m.index + m[0].length });
+        for (var k = 0; k < hits.length; k++) {
+          var prevEnd = k > 0 ? hits[k - 1].end : 0;
+          var after = line.slice(hits[k].end, k + 1 < hits.length ? hits[k + 1].start : line.length);
+          var n = packCount(after, line.slice(prevEnd, hits[k].start));
+          if (n === null && k === hits.length - 1 && i + 1 < lines.length) {
+            var nx = lines[i + 1].match(/^\s*\(?\s*(\d+)\s*пакет/i);   // count written on the next line
+            if (nx) n = parseInt(nx[1], 10);
+          }
+          found.push({ cal: hits[k].cal, n: n || 1 });
+        }
       }
       return found;
     }
-    var cals = scan(1);
-    if (!cals.length && lines.length === 1) cals = scan(0);
-    cals.sort(function (a, b) { return a - b; });
-    return { brand: brand, cals: cals };
+    var entries = scan(1);
+    if (!entries.length && lines.length === 1) entries = scan(0);
+    entries.sort(function (a, b) { return a.cal - b.cal; });
+    return { brand: brand, entries: entries, cals: entries.map(function (e) { return e.cal; }) };
+  }
+
+  // Small label such as "ЗОЖ · 1500×2". Shown on every compact row, and on every row while the package order is on.
+  function packChipHtml(info, flagUnknown) {
+    var calText = info.entries.map(function (e) { return e.cal + (e.n > 1 ? "×" + e.n : ""); }).join("+");
+    var brandText = info.brand >= 0 ? PACK_NAMES[info.brand] : (flagUnknown ? "?" : "");
+    var text = [brandText, calText].filter(Boolean).join(" · ");
+    if (!text) return "";
+    return '<span class="pkg-chip' + (flagUnknown && info.brand < 0 ? " unk" : "") + '">' + escapeHtml(text) + "</span>";
   }
 
   // True while the list is still in the package order made by the button.
@@ -964,18 +994,13 @@
         }
         var geoFailed = it.geo && it.geo.failed && it.geo.key === firstLineKey(it.text) && !it.delivered;
         var asCompact = state.compact && state.editingId !== it.id;
-        var chipHtml = "";
-        if (packOn) {
-          var pi = packageInfo(it.text);
-          var chipText = (pi.brand >= 0 ? PACK_NAMES[pi.brand] : "?") + (pi.cals.length ? " · " + pi.cals.join("+") : "");
-          chipHtml = '<span class="pkg-chip' + (pi.brand < 0 ? ' unk' : '') + '">' + escapeHtml(chipText) + '</span>';
-        }
+        var chipHtml = (packOn || state.compact) ? packChipHtml(packageInfo(it.text), packOn) : "";
 
         html += '<div class="body' + (asCompact ? ' c-body' : '') + '" data-action="' + (state.selectMode ? 'toggle-select' : 'start-edit') + '" data-id="' + it.id + '">';
         if (asCompact) {
-          html += '<div class="c-line">' + numHtml + chipHtml;
+          html += '<div class="c-line">' + numHtml;
           if (geoFailed) html += '<span class="geo-warn">⚠</span>';
-          html += '<div class="text' + (it.delivered ? ' delivered' : '') + '">' + escapeHtml(it.text.split("\n")[0].trim()) + '</div>';
+          html += '<div class="c-main"><div class="text' + (it.delivered ? ' delivered' : '') + '">' + escapeHtml(it.text.split("\n")[0].trim()) + '</div>' + chipHtml + '</div>';
           var ph = firstPhone(it.text);
           if (ph && !state.selectMode) {
             html += '<a class="wa-btn" href="https://wa.me/' + ph.digits + '" target="_blank" rel="noopener noreferrer" data-phone-link aria-label="WhatsApp ' + escapeHtml(ph.label) + '">' + svg.chat + '</a>';
@@ -987,7 +1012,7 @@
         } else {
           html += '<div class="meta">' + numHtml;
           if (isNext) html += '<span class="tag-next">' + escapeHtml(t("next")) + '</span>';
-          html += chipHtml;
+          if (packOn) html += chipHtml;
           if (geoFailed) html += '<span class="geo-warn">' + escapeHtml(t("notFound")) + '</span>';
           html += '</div>';
           if (state.editingId === it.id) {
